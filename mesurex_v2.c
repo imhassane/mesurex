@@ -1,15 +1,18 @@
 /*===============================================================
 // Nom du fichier : mesurex
 // Auteur : HASSANE & TANGUY
-// Date de crÈation : 1 Mars 2018
+// Date de cr√©ation : 1 Mars 2018
 // Version : V4
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Description :
-// Le vÈhicule, il roule sur un parcours sinueux et calcule la
-// parcourue.
+// Le v√©hicule, il roule en ligne droite.
+// Il tourne √† droite ou √† gauche suivant la direction qui lui est
+// indiqu√©e et calcule la distance qu'il a parcourue lorsque le
+// capteur de contact est appuy√©.
 // -----------------------------------------------------------------
 // A noter :
-// - les moteurs sont branchÈs sur les entrÈes A et B
+// - les moteurs sont branch√©s sur les entr√©es A et B
+// - les capteurs pour diriger le v√©hicule sont sur les sorties 3 et 4
 //===============================================================*/
 #include "hitechnic-angle.h"
 
@@ -46,30 +49,29 @@ void write(float mesure){
 
 task main()
 {
-	//
 	bool arret = true, avant = false, tourne = false;
 	// La puissance du moteur;
 	int puissance = 40;
 
-	// La distance parcourue et l'angle ÈffectuÈ.
+	// La distance parcourue et l'angle √©ffectu√©.
 	float distance = 0.0, angle = 0.0;
 	float distance_2 = 0.0, angle_2 = 0.0;
-
+	
+	// On r√©initialise les angles des moteurs au d√©but.
 	resetMotorEncoder(motorA);
 	resetMotorEncoder(motorB);
 
 	// Initialisation de l'angular sensor.
-  tHTANG angleSensor;
-  initSensor(&angleSensor, S2);
-  resetAccmulatedAngle(&angleSensor);
+  	tHTANG angleSensor;
+  	initSensor(&angleSensor, S2);
+  	resetAccmulatedAngle(&angleSensor);
 
 	while(SensorValue[S1] == 0){
-
-			if(!arret){
+			// On roule en ligne droite.
+			if(arret == false)
 				rouler_ligne_droite(puissance);
-			}
 
-			// Si le bouton droit est cliquÈ.
+			// Si le bouton droit est cliqu√©.
 			if(getButtonPress(buttonUp)){
 
 				// Si on n'allait pas en avant on change la puissance.
@@ -77,47 +79,51 @@ task main()
 					puissance = -puissance;
 					avant = true;
 				}
-				// On met l'arret ‡ false.
-				arret = false;
 
 			}else if(getButtonPress(buttonEnter)){
 				puissance = abso(puissance);
-				arret = false;
 				avant = false;
+				arret = false;
 
 			}else if(SensorValue[S3] == 1){
+				// On diminue la puissance de la roue de gauche
+				// pour pouvoir tourner √† gauche.
 				setMotorSpeed(puissance / 5, motorB);
 				sleep(200);
 
 			}else if(SensorValue[S4] == 1){
+				// On diminue la puissance de la route droite
+				// pour pouvoir tourner √† droite.
 				setMotorSpeed(puissance / 5, motorA);
 				sleep(200);
 			}
 
 			// On calcule la distance parcourue.
 			distance += calcul_distance_parcourue(angle);
+			// On lit la valeur de l'angular sensor.
 			readSensor(&angleSensor);
 		}
 
-		// On arrete le mouvement du vÈhicule lorsqu'on clique
-			// sur le bouton entrÈ.
+			// On arrete le mouvement du v√©hicule lorsqu'on clique
+			// sur le capteur est action√©.
 			stopMultipleMotors(motorA, motorB);
 
-			// On rÈcupËre l'angle ÈffectuÈ.
+			// On r√©cup√®re l'angle √©ffectu√© par les deux roues.
 			angle = getMotorEncoder(motorA);
 			angle_2 = getMotorEncoder(motorB);
 
-			// On enregistre la distance.
+			// On enregistre la distance √©ffectu√©e par les deux roues.
 			distance += calcul_distance_parcourue(angle);
 			distance_2 += calcul_distance_parcourue(angle_2);
 
-			// On affiche la distance parcourue.
 			distance = -(distance + 2);
 			distance_2 = -(distance_2 + 2);
-
+	
+			// On affiche la distance.
 			displayTextLine(5, "Distance parcourue: %g cm", distance);
 			displayTextLine(8, "Distance parcourue: %g cm", -calcul_distance_parcourue(angleSensor.accumlatedAngle));
-
+			
+			// On la met dans un fichier.
 			write(distance);
 
 			sleep(10000);
